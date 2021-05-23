@@ -253,8 +253,15 @@ class L3Switch(app_manager .RyuApp):
                 if icmp_pkt:
                     self.do_icmp(datapath, in_port, eth, ipv4_pkt, icmp_pkt)
             else:
-                # here we would forward the packet into other subnets
-                pass
+                # Check if Port
+                if ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
+                    dpid]:
+                    out_port = self.mac_to_port[dpid][self.ip_to_mac[dpid][ipv4_pkt.dst]]
+                else:
+                    out_port = ofproto.OFPP_FLOOD
+                    self.logger.info("packet flooded dpid: %s, src: %s, dest: %s, in_port: %s,dest_ip: %s", dpid, src,
+                                     dst, in_port, ipv4_pkt.dst)
+                self.send_packet(datapath, out_port, ipv4_pkt)
 
         # packet is not for this switch, so do l2 switching
         if dst != self.MAC_ADDR:
