@@ -253,14 +253,18 @@ class L3Switch(app_manager .RyuApp):
                 if icmp_pkt:
                     self.do_icmp(datapath, in_port, eth, ipv4_pkt, icmp_pkt)
             else:
-                # Check if Port
+                """
+                Note to TA: It is assumed that only will be one switch in the system at all times
+                As such we can infer that if this switch does not know the ip
+                then the ip does not exist and the packet should be dropped
+                as flooding the packet could lead to abuse, e.g. aDoS by one of the hosts
+                and there is no other router to send the request
+                """
                 if ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
                     dpid]:
+                    self.logger.info(self.ip_to_mac[dpid])
                     out_port = self.mac_to_port[dpid][self.ip_to_mac[dpid][ipv4_pkt.dst]]
                     self.send_packet(datapath, out_port, pkt)
-                else:
-                    #out_port = ofproto.OFPP_FLOOD
-                    self.logger.info("packet flooded" )
 
 
         # packet is not for this switch, so do l2 switching

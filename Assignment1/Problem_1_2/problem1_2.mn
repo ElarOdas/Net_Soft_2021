@@ -38,63 +38,15 @@
     ],
     "hosts": [
         {
-            "number": "6",
-            "opts": {
-                "defaultRoute": "10.0.2.254",
-                "hostname": "h6",
-                "ip": "10.0.2.2",
-                "nodeNum": 6,
-                "sched": "host"
-            },
-            "x": "253.0",
-            "y": "360.0"
-        },
-        {
-            "number": "7",
-            "opts": {
-                "defaultRoute": "10.0.2.254",
-                "hostname": "h7",
-                "ip": "10.0.2.3",
-                "nodeNum": 7,
-                "sched": "host"
-            },
-            "x": "334.0",
-            "y": "370.0"
-        },
-        {
-            "number": "1",
+            "number": "4",
             "opts": {
                 "defaultRoute": "10.0.1.254",
-                "hostname": "h1",
-                "ip": "10.0.1.1",
-                "nodeNum": 1,
+                "hostname": "h4",
+                "ip": "10.0.1.4",
+                "nodeNum": 4,
                 "sched": "host"
             },
-            "x": "144.0",
-            "y": "115.0"
-        },
-        {
-            "number": "8",
-            "opts": {
-                "defaultRoute": "10.0.2.254",
-                "hostname": "h8",
-                "ip": "10.0.2.4",
-                "nodeNum": 8,
-                "sched": "host"
-            },
-            "x": "412.0",
-            "y": "367.0"
-        },
-        {
-            "number": "2",
-            "opts": {
-                "defaultRoute": "10.0.1.254",
-                "hostname": "h2",
-                "ip": "10.0.1.2",
-                "nodeNum": 2,
-                "sched": "host"
-            },
-            "x": "280.0",
+            "x": "438.0",
             "y": "115.0"
         },
         {
@@ -106,20 +58,68 @@
                 "nodeNum": 3,
                 "sched": "host"
             },
-            "x": "382.0",
-            "y": "114.0"
+            "x": "357.0",
+            "y": "117.0"
         },
         {
-            "number": "4",
+            "number": "2",
             "opts": {
                 "defaultRoute": "10.0.1.254",
-                "hostname": "h4",
-                "ip": "10.0.1.4",
-                "nodeNum": 4,
+                "hostname": "h2",
+                "ip": "10.0.1.2",
+                "nodeNum": 2,
                 "sched": "host"
             },
-            "x": "478.0",
-            "y": "116.0"
+            "x": "222.0",
+            "y": "115.0"
+        },
+        {
+            "number": "8",
+            "opts": {
+                "defaultRoute": "10.0.2.254",
+                "hostname": "h8",
+                "ip": "10.0.2.4",
+                "nodeNum": 8,
+                "sched": "host"
+            },
+            "x": "441.0",
+            "y": "379.0"
+        },
+        {
+            "number": "1",
+            "opts": {
+                "defaultRoute": "10.0.1.254",
+                "hostname": "h1",
+                "ip": "10.0.1.1",
+                "nodeNum": 1,
+                "sched": "host"
+            },
+            "x": "137.0",
+            "y": "115.0"
+        },
+        {
+            "number": "7",
+            "opts": {
+                "defaultRoute": "10.0.2.254",
+                "hostname": "h7",
+                "ip": "10.0.2.3",
+                "nodeNum": 7,
+                "sched": "host"
+            },
+            "x": "350.0",
+            "y": "378.0"
+        },
+        {
+            "number": "6",
+            "opts": {
+                "defaultRoute": "10.0.2.254",
+                "hostname": "h6",
+                "ip": "10.0.2.2",
+                "nodeNum": 6,
+                "sched": "host"
+            },
+            "x": "236.0",
+            "y": "372.0"
         },
         {
             "number": "5",
@@ -187,8 +187,8 @@
                 "nodeNum": 1,
                 "switchType": "default"
             },
-            "x": "320.0",
-            "y": "240.0"
+            "x": "297.0",
+            "y": "237.0"
         }
     ],
     "version": "2"
