@@ -260,12 +260,18 @@ class L3Switch(app_manager .RyuApp):
                 as flooding the packet could lead to abuse, e.g. aDoS by one of the hosts
                 and there is no other router to send the request
                 """
+                self.ip_to_mac[dpid][ipv4_pkt.dst] = dst
+
                 if ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
                     dpid]:
-                    self.logger.info(self.ip_to_mac[dpid])
                     out_port = self.mac_to_port[dpid][self.ip_to_mac[dpid][ipv4_pkt.dst]]
+                    match = parser.OFPMatch(ipv4_src=ipv4_pkt.src,ipv4_dst=ipv4_pkt.dst)
+                    actions = [parser.OFPActionOutput(out_port)]
+                    self.add_flow(datapath,1,match,actions)
                     self.send_packet(datapath, out_port, pkt)
-
+                else:
+                    out_port = ofproto.OFPP_FLOOD
+                    self.send_packet(datapath, out_port, pkt)
 
         # packet is not for this switch, so do l2 switching
         if dst != self.MAC_ADDR:
