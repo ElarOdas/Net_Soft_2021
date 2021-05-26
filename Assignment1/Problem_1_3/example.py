@@ -266,12 +266,13 @@ class L3Switch(app_manager .RyuApp):
                     self.logger.info("\n\n Flood Reached\n\n")
                     out_port = ofproto.OFPP_FLOOD
                     self.send_packet(datapath, out_port, pkt)
-                    
-                    #Note to TA:
-                    #ARP seems to break the network by creating infinite request and replies
-                    #this leads to an accidental DOS.
-                    #As such it was commented out, as the task does not require working arp
-                    #and bugfixing it did not work
+                    """
+                    Note to TA:
+                    ARP seems to break the network by creating infinite request and replies.
+                    This leads to an accidental DOS.
+                    As such it was commented out, as the task does not require working arp
+                    and bugfixing it did not work
+                    """
 
         #if eth.ethertype == ether_types.ETH_TYPE_ARP:
         #    self.do_arp(datapath, pkt, eth, in_port)
