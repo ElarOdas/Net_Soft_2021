@@ -10,13 +10,16 @@ from ryu.lib.packet import ipv4
 from ryu.lib.packet import icmp
 from ryu.lib.packet.arp import arp
 from ryu.lib.packet.packet import Packet
+from ryu.lib.packet import tcp
 
 class L3Switch(app_manager .RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
 
     IP_ADDR = "10.0.0.254"
     MAC_ADDR = "52:00:00:00:00:01"
-    round_robin = 1
+    round_robin = 0
+    server_ip = ["10.0.0.2","10.0.0.3","10.0.0.4"]
+    anycast_map = dict()
 
     def __init__(self, *args, **kwargs):
         super(L3Switch, self).__init__(*args, **kwargs)
@@ -257,28 +260,37 @@ class L3Switch(app_manager .RyuApp):
             else:
                 self.ip_to_mac[dpid][ipv4_pkt.dst] = dst
                 if ipv4_pkt.dst == '10.0.0.100':
-                    pass
                     """
-                    TODO:
-                    - check if round_robin keeps state
-                    - include case for selected server not in self.ip_to_mac
-                    - include way to increment round_robin
-                    - include selection of server
-                    - include sending of packet
+                    Note to TA: As the task requires implementation of tcp handling
+                    the Protocol ID argument of th 4-Tupel is always the same.
+                    It is assumed that in normal circumstances other stateful protocols
+                    also receive the same flow based any-cast treatment and Protocol ID would matter
+                    """
+                    #There might be more ryu ways to check if pkt is a tcp protocol but this method does the job
+                    if ipv4_pkt.proto == 6:
+                        tcp_pkt = pkt.get_protocol(tcp.tcp)
+                        pkt_tupel = (ipv4_pkt.src,ipv4_pkt.dst,tcp_pkt.src_port,tcp_pkt.dst_port,ipv4_pkt.proto)
+                        hashed_pkt = "%s",hash(pkt_tupel)
+                        if hashed_pkt in self.anycast_map:
+                            ipv4_pkt.dst = self.anycast_map[hashed_pkt]
+                        else:
+                            ipv4_pkt.dst = self.server_ip[self.round_robin]
+                            self.round_robin = 0 if self.round_robin >= 2 else self.round_robin+1
+                            self.anycast_map[hashed_pkt] = ipv4_pkt.dst
+                    else:
+                        ipv4_pkt.dst = self.server_ip[self.round_robin]
+                        self.round_robin = 0 if self.round_robin >= 2 else self.round_robin+1
 
-                    - For second part of 1_4:
-                        - Extract TCP protocol identifier
-                        - Create Hashtable for [ipv4_pkt.src,in_port,protocol-id]
-                        #Note to TA: As only one anycast adress is used dst_port and dst_ip are obsolete as they stay the same
-                        - Insert new Entries to the Hashtable
-                        - Check if incoming packet is already in hash table
-                        - Send packet to correct server 
-                    """
-                elif ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
+                if ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
                     dpid]:
                     out_port = self.mac_to_port[dpid][self.ip_to_mac[dpid][ipv4_pkt.dst]]
                     match = parser.OFPMatch(ipv4_src=ipv4_pkt.src,ipv4_dst=ipv4_pkt.dst)
                     actions = [parser.OFPActionOutput(out_port)]
+                    """
+                    Due to the lean implementation of anycast, flow entries are made for the servers
+                    during every anycast. This was deemed to be a non-damaging side effect justified
+                    by the improvement in readability of the _packet_in_handler function.
+                    """
                     self.add_flow(datapath,1,match,actions)
                     self.send_packet(datapath, out_port, pkt)
                 else:
