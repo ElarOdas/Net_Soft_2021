@@ -1,3 +1,12 @@
+"""
+Tl;dr for TA:
+The task was fully acomplished
+ARP was used to get missing entries
+other option could have been using flood only.
+
+Used Tests: pingall
+"""
+
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
@@ -255,6 +264,9 @@ class L3Switch(app_manager .RyuApp):
             else:
                 self.ip_to_mac[dpid][ipv4_pkt.dst] = dst
 
+                if ipv4_pkt.dst not in self.ip_to_mac[dpid]:
+                    self.send_arp(datapath,1,self.MAC_ADDR,self.IP_ADDR,"FF:FF:FF:FF:FF:FF",ipv4_pkt.dst,ofproto.OFPP_FLOOD)
+
                 if ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
                     dpid]:
                     out_port = self.mac_to_port[dpid][self.ip_to_mac[dpid][ipv4_pkt.dst]]
@@ -262,9 +274,7 @@ class L3Switch(app_manager .RyuApp):
                     actions = [parser.OFPActionOutput(out_port)]
                     self.add_flow(datapath,1,match,actions)
                     self.send_packet(datapath, out_port, pkt)
-                else:
-                    out_port = ofproto.OFPP_FLOOD
-                    self.send_packet(datapath, out_port, pkt)
+
 
         # packet is not for this switch, so do l2 switching
         if dst != self.MAC_ADDR:

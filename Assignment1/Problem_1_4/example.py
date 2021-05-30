@@ -1,3 +1,19 @@
+"""
+Here ARP was used again to propagate the anycast mac to the hosts
+Send packet was exanded to accomplish change of ip and port
+_packet_in_handler was extended to get both anycasts
+If two implementations(normal and flow based) were to be submitted separately
+one can seperate the if structure from line 289ff and copy the topology as it is the same for both cases
+While "h1 ping 10.0.0.100" is working neither udp nor tcp are establishing a channel of communication
+udp packets are send according to normal anycast to different servers
+and TCP sends a couple of packets(probably SYN) to the same server before stopping
+
+Possible reasons for this:
+The given test method for listening: nc -l 10.0.0.100 -p 12345 -u -k gave: Cannot assign requested address
+So the mistake might be in the testing method instead of the controller implementation
+Another reason could be that the controller sends the packets not to the servers but somewhere else.
+As the OFPActionSetField get the correct MAC and IP and out_port is generated the same way as normal packets are
+"""
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
@@ -66,13 +82,14 @@ class L3Switch(app_manager .RyuApp):
         parser = datapath.ofproto_parser
 
         pkt.serialize()
+
         data = pkt.data
 
         if dst_mac and dst_ip:
             actions = [parser.OFPActionSetField(eth_dst=dst_mac),parser.OFPActionSetField(ipv4_dst=dst_ip),parser.OFPActionOutput(port=port)]
         else:
             actions = [parser.OFPActionOutput(port=port)]
-
+        self.logger.info("packet-out %s\n Actions:",pkt,actions)
         if buffer_id:
             out = parser.OFPPacketOut(datapath=datapath,
                                   buffer_id=buffer_id,
@@ -271,7 +288,7 @@ class L3Switch(app_manager .RyuApp):
                     self.do_icmp(datapath, in_port, eth, ipv4_pkt, icmp_pkt)
             else:
                 self.ip_to_mac[dpid][ipv4_pkt.dst] = dst
-                if ipv4_pkt.dst == '10.0.0.100':
+                if ipv4_pkt.ds % (t == '10.0.0.100':
                     """
                     Note to TA: As the task requires implementation of tcp handling
                     the Protocol ID argument of th 4-Tupel is always the same.
@@ -289,7 +306,7 @@ class L3Switch(app_manager .RyuApp):
                             ipv4_pkt.dst = self.server_ip[self.round_robin]
                             self.round_robin = 0 if self.round_robin >= 2 else self.round_robin+1
                             self.anycast_map[hashed_pkt] = ipv4_pkt.dst
-                        self.logger.info("\n Sending TCP to %s\n",ipv4_pkt.dst)
+
                     else:
                         ipv4_pkt.dst = self.server_ip[self.round_robin]
                         self.round_robin = 0 if self.round_robin >= 2 else self.round_robin+1

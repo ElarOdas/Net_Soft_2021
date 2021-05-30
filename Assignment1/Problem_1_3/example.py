@@ -1,3 +1,12 @@
+"""
+tl;dr; for TA:
+Task was accomplished without arp
+Possible fix would be to check for Arps from one switch to another, but
+this was deemed not necessary as it is not mentioned in the task that arp must be working.
+
+Used Tests: pingall/h[1-4] ping s[1-2]
+"""
+
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
@@ -60,7 +69,7 @@ class L3Switch(app_manager .RyuApp):
         parser = datapath.ofproto_parser
 
         pkt.serialize()
-        self.logger.info("packet-out %s" % (pkt,))
+        self.logger.info("packet-out %s",pkt)
         data = pkt.data
 
         actions = [parser.OFPActionOutput(port=port)]
@@ -251,19 +260,23 @@ class L3Switch(app_manager .RyuApp):
                     self.do_icmp(datapath, in_port, eth, ipv4_pkt, icmp_pkt)
             else:
                 #Learn IP
-                self.logger.info("\n\n IPv4 Reached\n\n")
                 self.ip_to_mac[dpid][ipv4_pkt.dst] = dst
                 if ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
                     dpid]:
                     out_port = self.mac_to_port[dpid][self.ip_to_mac[dpid][ipv4_pkt.dst]]
                     #Note to TA: With more hosts than 1 in a network,'255.255.255.255' Prefix would be necessary
                     #But the given solution already seemed chessy enough
-                    match = parser.OFPMatch(ipv4_src=(ipv4_pkt.src,'255.255.255.0'),ipv4_dst=(ipv4_pkt.dst,'255.255.255.0'))
+                    masks = {
+                    "10.0.1.1": "255.255.255.240",
+                    "10.0.2.1": "255.255.255.0",
+                    "10.0.3.1": "255.255.255.192",
+                    "10.0.4.1": "255.255.255.252"
+                    }
+                    match = parser.OFPMatch(ipv4_src=(ipv4_pkt.src,masks[ipv4_pkt.src]),ipv4_dst=(ipv4_pkt.dst,masks[ipv4_pkt.dst]))
                     actions = [parser.OFPActionOutput(out_port)]
                     self.add_flow(datapath,1,match,actions)
                     self.send_packet(datapath, out_port, pkt)
                 else:
-                    self.logger.info("\n\n Flood Reached\n\n")
                     out_port = ofproto.OFPP_FLOOD
                     self.send_packet(datapath, out_port, pkt)
                     """
