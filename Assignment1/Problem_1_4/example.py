@@ -27,6 +27,7 @@ class L3Switch(app_manager .RyuApp):
         self.ip_to_mac = {}
 
 
+
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
@@ -60,15 +61,17 @@ class L3Switch(app_manager .RyuApp):
                                     match=match, instructions=inst)
         datapath.send_msg(mod)
 
-    def send_packet(self, datapath, port, pkt, buffer_id=None):
+    def send_packet(self, datapath, port, pkt, buffer_id=None, dst_mac = None,dst_ip = None):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
         pkt.serialize()
-        self.logger.info("packet-out %s" % (pkt,))
         data = pkt.data
 
-        actions = [parser.OFPActionOutput(port=port)]
+        if dst_mac and dst_ip:
+            actions = [parser.OFPActionSetField(eth_dst=dst_mac),parser.OFPActionSetField(ipv4_dst=dst_ip),parser.OFPActionOutput(port=port)]
+        else:
+            actions = [parser.OFPActionOutput(port=port)]
 
         if buffer_id:
             out = parser.OFPPacketOut(datapath=datapath,
@@ -83,6 +86,7 @@ class L3Switch(app_manager .RyuApp):
                                   actions=actions,
                                   data=data)
 
+        self.logger.info(out)
         datapath.send_msg(out)
 
     def do_arp(self, datapath, packet, frame, inPort):
@@ -109,6 +113,7 @@ class L3Switch(app_manager .RyuApp):
                 self.ip_to_mac[dpid][dstIP] = dstMAC
                 self.logger.info("send ARP reply %s => %s (port%d)" %(srcMAC, dstMAC, outPort))
             else:
+                self.logger.info("%s, arpPacket.dst_ip: %s",self.ip_to_mac[dpid],arpPacket.dst_ip)
                 if arpPacket.dst_ip in self.ip_to_mac[dpid]:
                     # optimization: the switch already knows the mapping and can answer the request
                     opcode = 2
@@ -130,7 +135,7 @@ class L3Switch(app_manager .RyuApp):
                     self.mac_to_port[dpid][srcMAC] = inPort
                     # learn ip 2 mac mapping
                     self.ip_to_mac[dpid][srcIP] = srcMAC
-                    self.logger.info("froward ARP request %s => %s (port%d)" %(srcMAC, dstMAC, outPort))
+                    self.logger.info("forward ARP request %s => %s (port%d)" %(srcMAC, dstMAC, outPort))
         elif arpPacket.opcode == 2 :
             opcode = 2
             #arp reply
@@ -139,11 +144,14 @@ class L3Switch(app_manager .RyuApp):
             srcIP   = arpPacket.src_ip
             dstMAC  = frame.dst
             dstIP   = arpPacket.dst_ip
+            # learn ip 2 mac mapping
+            self.ip_to_mac[dpid][srcIP] = srcMAC
+            if frame.dst == self.MAC_ADDR and frame.dstIP in [self.IP_ADDR,"10.0.0.100"]:
+                return
             outPort = self.mac_to_port[dpid][dstMAC]
             # learn mac 2 port mapping
             self.mac_to_port[dpid][srcMAC] = inPort
-            # learn ip 2 mac mapping
-            self.ip_to_mac[dpid][srcIP] = srcMAC
+
             self.logger.debug('forward ARP reply %s => %s (port%d)'%(frame.src ,frame.dst, inPort))
         self.send_arp(datapath, opcode, srcMAC, srcIP, dstMAC, dstIP, outPort)
 
@@ -235,22 +243,26 @@ class L3Switch(app_manager .RyuApp):
         dpid = datapath.id
         self.mac_to_port.setdefault(dpid, {})
         self.ip_to_mac.setdefault(dpid, {})
+        self.ip_to_mac[dpid]["10.0.0.100"] = "52:00:00:00:00:01"
 
         self.logger.info("packet in dpid: %s, src: %s, dest: %s, in_port: %s", dpid, src, dst, in_port)
-
         #learn mac to port mapping
         if src not in self.mac_to_port[dpid]:
             self.mac_to_port[dpid][src] = in_port
             match = parser.OFPMatch(in_port=in_port, eth_dst=dst)
             actions = [parser.OFPActionOutput(in_port)]
-            self.add_flow(datapath, 1, match, actions)
+            #self.add_flow(datapath, 1, match, actions)
 
-        #if eth.ethertype == ether_types.ETH_TYPE_ARP:
-        #    self.do_arp(datapath, pkt, eth, in_port)
-        #    return
+        """
+        Here ARP works and is important for getting the MAC of the ANYCAST IP
+        """
+        if eth.ethertype == ether_types.ETH_TYPE_ARP:
+            self.do_arp(datapath, pkt, eth, in_port)
+            return
 
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             ipv4_pkt = pkt.get_protocol(ipv4.ipv4)
+
 
             #check if packet is for this switch
             if ipv4_pkt.dst == self.IP_ADDR:
@@ -277,25 +289,26 @@ class L3Switch(app_manager .RyuApp):
                             ipv4_pkt.dst = self.server_ip[self.round_robin]
                             self.round_robin = 0 if self.round_robin >= 2 else self.round_robin+1
                             self.anycast_map[hashed_pkt] = ipv4_pkt.dst
+                        self.logger.info("\n Sending TCP to %s\n",ipv4_pkt.dst)
                     else:
                         ipv4_pkt.dst = self.server_ip[self.round_robin]
                         self.round_robin = 0 if self.round_robin >= 2 else self.round_robin+1
+
+                if ipv4_pkt.dst not in self.ip_to_mac[dpid]:
+                    self.send_arp(datapath,1,self.MAC_ADDR,self.IP_ADDR,"FF:FF:FF:FF:FF:FF",ipv4_pkt.dst,ofproto.OFPP_FLOOD)
 
                 if ipv4_pkt.dst in self.ip_to_mac[dpid] and self.ip_to_mac[dpid][ipv4_pkt.dst] in self.mac_to_port[
                     dpid]:
                     out_port = self.mac_to_port[dpid][self.ip_to_mac[dpid][ipv4_pkt.dst]]
                     match = parser.OFPMatch(ipv4_src=ipv4_pkt.src,ipv4_dst=ipv4_pkt.dst)
                     actions = [parser.OFPActionOutput(out_port)]
-                    """
-                    Due to the lean implementation of anycast, flow entries are made for the servers
-                    during every anycast. This was deemed to be a non-damaging side effect justified
-                    by the improvement in readability of the _packet_in_handler function.
-                    """
-                    self.add_flow(datapath,1,match,actions)
-                    self.send_packet(datapath, out_port, pkt)
-                else:
-                    out_port = ofproto.OFPP_FLOOD
-                    self.send_packet(datapath, out_port, pkt)
+                    #only time ip changes is if mac changes
+                    if dst == self.ip_to_mac[dpid][ipv4_pkt.dst]:
+                        self.add_flow(datapath,1,match,actions)
+                        self.send_packet(datapath, out_port, pkt)
+                    else:
+                        self.send_packet(datapath, out_port, pkt,dst_mac=self.ip_to_mac[dpid][ipv4_pkt.dst],dst_ip=ipv4_pkt.dst)
+
 
         # packet is not for this switch, so do l2 switching
         if dst != self.MAC_ADDR:
