@@ -14,20 +14,26 @@ def main(p4info_file_path, bmv2_file_path):
         switches.append(switch_control.SwitchControl("s2", '127.0.0.1:50052', 1, p4info_file_path, bmv2_file_path))
 
         # switch 1
-        #switches[0].writeIPv4LPMrule("10.0.1.1", 32, "00:00:00:00:01:01", 1)
-        #switches[0].writeIPv4LPMrule("10.0.2.1", 32, "00:00:00:02:02:00", 2)
-        #Tunnel(host2,10.0.2.254)
-        #Detunnel(10.0.1.254)
-        #switches[0].writeIPv6LPMrule("fdeeaf929c9610010000000000000001",32 , "00:00:00:00:01:01", 1)
+        switches[0].writeIPv4LPMrule("10.0.1.1", 32, "00:00:00:00:01:01", 1)
+        switches[0].writeIPv4LPMrule("10.0.2.1", 32, "00:00:00:02:02:00", 2)
+        # Comment Tunnel and DeTunnel for Task 1
+        #switches[0].writeTunnelrule("fdeeaf929c9610010000000000000002",32,"10.0.2.254","00:00:00:02:02:00", 2)
+        #switches[0].writeDeTunnelrule("10.0.1.254",0)
 
-        #switches[0].writeIPv6LPMrule("fdeeaf929c9610010000000000000002", 32, "00:00:00:02:02:00", 2)
+        switches[0].writeIPv6LPMrule("fdeeaf929c9610010000000000000001", 32 , "00:00:00:00:01:01", 1)
+        # Uncomment for Task 1
+        #switches[0].writeIPv6LPMrule("fdeeaf929c9610010000000000000002", 32 , "00:00:00:02:02:00", 2)
 
 
         # switch 2
         switches[1].writeIPv4LPMrule("10.0.1.1", 32, "00:00:00:01:01:00", 2)
         switches[1].writeIPv4LPMrule("10.0.2.1", 32, "00:00:00:00:02:02", 1)
-        #switches[1].writeIPv6LPMrule("fdeeaf929c9610010000000000000001", 32, "00:00:00:01:01:00", 2)
-        #switches[1].writeIPv6LPMrule("fdeeaf929c9610010000000000000002", 32, "00:00:00:00:02:02", 1)
+        # Comment Tunnel and DeTunnel for Task 1
+        switches[1].writeTunnelrule("fdeeaf929c9610010000000000000001", 32,"10.0.1.254", "00:00:00:01:01:00", 2)
+        switches[1].writeDeTunnelrule("10.0.2.254",0)
+        # Uncomment for Task 1
+        #switches[1].writeIPv6LPMrule("fdeeaf929c9610010000000000000001", 32 , "00:00:00:01:01:00", 2)
+        switches[1].writeIPv6LPMrule("fdeeaf929c9610010000000000000002", 32 , "00:00:00:00:02:02", 1)
 
 
         while True:

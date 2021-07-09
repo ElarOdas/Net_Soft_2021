@@ -93,11 +93,12 @@ class SwitchControl:
 
 
     def writeTunnelrule(self, dstAddr, dstPrefix, dstAddrSwitch, dstMac, port):
+        dstAddr = bytes(bytearray.fromhex(dstAddr))
         # Assemble the table entry
         table_entry = self.p4info_helper.buildTableEntry(
             table_name="MyIngress.ipv6_lpm",
             match_fields={
-                "hdr.ipv6.dstAddr": (self.transform_ipv6(dstAddr), dstPrefix)
+                "hdr.ipv6.dstAddr": (dstAddr, dstPrefix)
             },
             action_name="MyIngress.tunnel",
             action_params={

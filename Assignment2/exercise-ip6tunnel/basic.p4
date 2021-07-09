@@ -132,6 +132,7 @@ control MyIngress(inout headers hdr,
         hdr.ipv4.setValid();
         hdr.ipv4.dstAddr = dstAddrSwitch;
         hdr.ipv4.protocol = 41;
+        hdr.ipv4.ttl = 64;
 
         standard_metadata.egress_spec = port;
         hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
@@ -163,7 +164,10 @@ control MyIngress(inout headers hdr,
         actions = {
             ipv6_forward;
             tunnel;
+            drop;
         }
+        size = 1024;
+        default_action = drop();
     }
 
 
