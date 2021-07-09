@@ -1,0 +1,20 @@
+Nachteile:
+
+Für UDP Technologien:
+Die UDP Technologie ist an sich nicht zuverlässig. Pakete können überhaupt nicht oder in anderer Reihenfolge ankommen.  Die Nutzung von "only accept the next sequence number" 
+untergräbt die UDP Technologie und schränkt den eigentlichen Nutzen von UDP, die Geschwindigkeit, stark ein.
+
+Für TCP Technologien:
+TCP besitzt bereits eine Steuerung der Paketreihenfolge, die auch spätere Pakete nicht direkt einbezieht. Es wird mit "only accept the next sequence number"  also nicht nur die Einbeziehung von 
+späteren Paketen komplett unterbunden, sondern auch wird die Paketreihenfolge doppelt unternommen. Senden von großen Datenmengen wird also sehr viel langsamer.
+
+Allgemein: 
+"only accept the next sequence number"  verwirft unnötig Pakete, dadurch dass es zukünftige Pakete komplett verwirft. 
+Jeder Switch müsste bei mehreren Tunnelenden ein Register wie in der Aufgabe zu jedem Tunnelende führen, dies kann enorm viel Speicherplatz beanspruchen. Dies ist eigentlich kein reiner
+ Nachteil von "only accept the next sequence number",  aber dennoch erwähnenswert.
+
+Verbesserung:
+
+"only accept the next sequence number"  ersetzen mit "only accept all future sequence numbers, save the next" also ein Test mit dem wie bei TCP alle Pakete mit größer Sequenznummer akzeptiert werden
+aber nur im Fall, dass es sich um die nächste Sequenznummer handelt, der Eintrag im Register geändert wird. Außerdem sollte für UDP keine Kontrolle der Sequenznummern stattfinden, da doppelte
+Pakete ein akzeptierbares Risiko für UDP ist.   
